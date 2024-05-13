@@ -19,8 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-#include <stdlib.h>
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -51,7 +49,8 @@ uint8_t SPI_TX[10];
 uint8_t SPI_RX[10];
 
 uint64_t Number;
-
+uint32_t Random;
+uint32_t x;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,7 +99,7 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-
+  Random = rand() % 20;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,6 +109,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
@@ -271,11 +271,11 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
@@ -312,10 +312,10 @@ void SPITxRx_Setup()
 void LIGHT_OUTPUT_Setup()
 {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0);
-	SPITx[0] = 0b01000000;
-	SPITx[1] = 0x01;
-	SPITx[2] = 0b00000000;
-	HAL_SPI_TransmitReceive_IT(&hspi3, SPITx, SPIRx, 3);
+	SPI_TX[0] = 0b01000000;
+	SPI_TX[1] = 0x01;
+	SPI_TX[2] = 0b00000000;
+	HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
 }
 
 void SPITxRx_readIO()
@@ -323,28 +323,28 @@ void SPITxRx_readIO()
 		if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0);
-				SPITx[0] = 0b01000001;
-				SPITx[1] = 0x12;
-				SPITx[2] = 0;
-				HAL_SPI_TransmitReceive_IT(&hspi3, SPITx, SPIRx, 3);
+				SPI_TX[0] = 0b01000001;
+				SPI_TX[1] = 0x12;
+				SPI_TX[2] = 0;
+				HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
 			}
 }
 
 void Convert_HC_35_2_Number()
 {
-	if (SPIRx[2]== x)
+	if (SPI_RX[2]== x)
 		{
 			Number = 1;
 		}
-	else if (SPIRx[2]== x)
+	else if (SPI_RX[2]== x)
 		{
 			Number = 2;
 		}
-	else if (SPIRx[2]== x)
+	else if (SPI_RX[2]== x)
 		{
 			Number = 3;
 		}
-	else if (SPIRx[2]== x)
+	else if (SPI_RX[2]== x)
 		{
 			Number = 4;
 		}
@@ -357,7 +357,7 @@ void Game()
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	Do_something;
+
 }
 
 
