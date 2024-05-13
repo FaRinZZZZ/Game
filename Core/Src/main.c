@@ -51,6 +51,7 @@ uint8_t SPI_RX[10];
 uint64_t Number;
 uint32_t Random;
 uint32_t x;
+uint16_t control_rand;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,7 +100,7 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-  Random = rand() % 20;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,7 +110,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+	  random_std();
   }
   /* USER CODE END 3 */
 }
@@ -360,7 +361,29 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+	{
+		if(GPIO_Pin == GPIO_PIN_13)
+		{
+			if (control_rand == 1)
+				{
+					control_rand = 0;
+				}
+			else if (control_rand == 0)
+				{
+					control_rand = 1;
+				}
+		}
 
+
+	}
+void random_std()
+{
+	if(control_rand == 1)
+	{
+		Random = rand() % 20;
+	}
+}
 /* USER CODE END 4 */
 
 /**
