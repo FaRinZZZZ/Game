@@ -68,7 +68,6 @@ static void MX_SPI3_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 void SPITxRx_read_Write_IO();
-void SPITxRx_Setup();
 void LIGHT_OUTPUT_Setup();
 void random_std();
 void Convert_HC_35_2_Number();
@@ -366,15 +365,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void SPITxRx_Setup()
-{
-	//CS pulse
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0); // CS Select
-		HAL_Delay(1);
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 1); // CS deSelect
-		HAL_Delay(1);
-}
-
 void LIGHT_OUTPUT_Setup()
 {
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0);
@@ -471,6 +461,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 1);
 }
 
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		if(GPIO_Pin == GPIO_PIN_13)
@@ -485,8 +476,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 				}
 		}
 
-
 	}
+
 void random_std()
 {
 	if(control_rand == 1)
