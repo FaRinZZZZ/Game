@@ -54,6 +54,7 @@ uint64_t Number;
 uint32_t Random;
 uint32_t x;
 uint16_t control_rand;
+uint16_t State;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,6 +67,9 @@ static void MX_I2C1_Init(void);
 void SPITxRx_readIO();
 void SPITxRx_Setup();
 void LIGHT_OUTPUT_Setup();
+void random_std();
+void Convert_HC_35_2_Number();
+void SET_LIGHT_B();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -107,7 +111,6 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   LIGHT_OUTPUT_Setup();
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,6 +121,9 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  SPITxRx_readIO();
+	  Convert_HC_35_2_Number();
+	  random_std();
+	  LIGHT_OUTPUT_Setup();
   }
   /* USER CODE END 3 */
 }
@@ -379,31 +385,49 @@ void SPITxRx_readIO()
 		if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0);
-				SPI_TX[0] = 0b01000001;
-				SPI_TX[1] = 0x12;
-				SPI_TX[2] = 0;
+				if (State == 0)
+				{
+					SPI_TX[0] = 0b01000001;
+					SPI_TX[1] = 0x12;
+					SPI_TX[2] = 0;
+				}
+				else if (State == 1)
+				{
+					SET_LIGHT_B();
+				}
 				HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
 			}
 }
 
+void SET_LIGHT_B()
+{
+			SPI_TX[0] = 0b01000000;
+			SPI_TX[1] = 0x15;
+			SPI_TX[2] = 0b00001111;
+}
+
 void Convert_HC_35_2_Number()
 {
-	if (SPI_RX[2]== x)
+	if (SPI_RX[2]== 14)
 		{
 			Number = 1;
 		}
-	else if (SPI_RX[2]== x)
+	else if (SPI_RX[2]== 13)
 		{
 			Number = 2;
 		}
-	else if (SPI_RX[2]== x)
+	else if (SPI_RX[2]== 11)
 		{
 			Number = 3;
 		}
-	else if (SPI_RX[2]== x)
+	else if (SPI_RX[2]== 7)
 		{
 			Number = 4;
 		}
+	else
+	{
+		Number = 0;
+	}
 }
 
 void Game()
@@ -413,6 +437,15 @@ void Game()
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
+	if(State==0)
+	{
+		State = 1;
+	}
+	else if(State == 1)
+	{
+		State = 0;
+	}
+
 	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 1);
 }
 
@@ -436,9 +469,12 @@ void random_std()
 {
 	if(control_rand == 1)
 	{
-		Random = rand() % 20;
+		Random = rand() % 4;
+
+
 	}
 }
+
 /* USER CODE END 4 */
 
 /**
