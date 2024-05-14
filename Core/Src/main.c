@@ -55,6 +55,9 @@ uint32_t Random;
 uint32_t x;
 uint16_t control_rand;
 uint16_t State;
+uint16_t Z;
+uint16_t T;
+uint16_t Reward;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,12 +67,13 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
-void SPITxRx_readIO();
+void SPITxRx_read_Write_IO();
 void SPITxRx_Setup();
 void LIGHT_OUTPUT_Setup();
 void random_std();
 void Convert_HC_35_2_Number();
 void SET_LIGHT_B();
+void shipbit();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -120,10 +124,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  SPITxRx_readIO();
+	  SPITxRx_read_Write_IO();
 	  Convert_HC_35_2_Number();
 	  random_std();
-	  LIGHT_OUTPUT_Setup();
+
   }
   /* USER CODE END 3 */
 }
@@ -380,32 +384,47 @@ void LIGHT_OUTPUT_Setup()
 	HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
 }
 
-void SPITxRx_readIO()
+void SPITxRx_read_Write_IO()
 	{
-		if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
+	if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
+		{
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0); // CS Select
+			if (State == 0)
 			{
-				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0);
-				if (State == 0)
-				{
-					SPI_TX[0] = 0b01000001;
-					SPI_TX[1] = 0x12;
-					SPI_TX[2] = 0;
-				}
-				else if (State == 1)
-				{
-					SET_LIGHT_B();
-				}
-				HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
+				SPI_TX[0] = 0b01000001;//read
+				SPI_TX[1] = 0x12;
+				SPI_TX[2] = 0;
+			}
+			else if(State == 1)
+			{
+				SET_LIGHT_B();
+			}
+			HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
 			}
 }
 
 void SET_LIGHT_B()
 {
-			SPI_TX[0] = 0b01000000;
-			SPI_TX[1] = 0x15;
-			SPI_TX[2] = 0b00001111;
-}
+	SPI_TX[0] = 0b01000000;
+	SPI_TX[1] = 0x15;
+	if (Number == 1)
+	{
+		SPI_TX[2] = 0b11000000;
+	}
+	else if (Number == 2)
+	{
+		SPI_TX[2] = 0b00000011;
+	}
+	else if (Number == 3)
+	{
+		SPI_TX[2] = 0b11111111;
+	}
 
+}
+void shipbit()
+{
+	T = SPI_RX[2] >> 4;
+}
 void Convert_HC_35_2_Number()
 {
 	if (SPI_RX[2]== 14)
@@ -424,15 +443,18 @@ void Convert_HC_35_2_Number()
 		{
 			Number = 4;
 		}
-	else
-	{
-		Number = 0;
-	}
 }
 
 void Game()
 {
-
+	if(Random == Number)
+	{
+		Reward = 1;
+	}
+	else if (Random != Number)
+	{
+		Reward = 0;
+	}
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
