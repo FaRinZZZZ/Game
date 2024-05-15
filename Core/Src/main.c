@@ -31,7 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define EEPROM_ADDR 0b10100000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -63,6 +63,13 @@ uint16_t Reward;
 uint16_t Rx_Button[10];
 uint16_t light;
 uint16_t LMode;
+uint16_t Press;
+uint16_t test;
+
+uint8_t WriteFlag = 0;
+uint8_t ReadFlag = 0;
+uint8_t ReadBomb[4];
+uint8_t data[4];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,6 +128,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);
+  light = 0b11111111;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -133,6 +141,10 @@ int main(void)
 	  SPITxRx_read_Write_IO();
 	  Convert_HC_35_2_Number();
 	  random_std();
+	  Game();
+	  EEPROMWrite();
+	  EEPROMRead(ReadBomb, 1);
+	  Checkbomb();
 
 
   }
@@ -454,21 +466,22 @@ void SET_LIGHT_B()
 {
 	if(control_rand == 0)
 	{
-		if (Number == 1)
+		if (Reward == 1 && Press >= 2)
 			{
-				light = 0b11000000;
+				Blink();
 			}
-			else if (Number == 2)
+			else if (Reward == 2 && Press >= 2)
 			{
-				light = 0b00000011;
+				Looping();
 			}
-			else if (Number == 3)
+			else if(ReadBomb[0] != 0 && Press <= 1)
+			{
+				DisplayBomb();
+				test = 10;
+			}
+			else
 			{
 				light = 0b11111111;
-			}
-			else if (Number == 4)
-			{
-				light = 0b00000000;
 			}
 	}
 	else if (control_rand == 1)
@@ -505,13 +518,15 @@ void Convert_HC_35_2_Number()
 
 void Game()
 {
-	if(Random == Number)
+	if(Random == Number && Press >= 2)
 	{
 		Reward = 1;
+		data[0] = Random;
+		WriteFlag = 1;
 	}
-	else if (Random != Number)
+	else if (Random != Number && Press >= 2 && Number != 0)
 	{
-		Reward = 0;
+		Reward = 2;
 	}
 }
 
@@ -534,23 +549,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		if(GPIO_Pin == GPIO_PIN_13)
 		{
-			if (control_rand == 1)
+			if (control_rand == 1 && Press < 2)
 				{
 					control_rand = 0;
 				}
-			else if (control_rand == 0)
+			else if (control_rand == 0 && Press < 2)
 				{
 					control_rand = 1;
 				}
+			Press += 1;
 		}
 
 	}
 
 void random_std()
 {
-	if(control_rand == 1)
+	if(control_rand == 1 )
 	{
 		Random = (rand() % 4)+1;
+		Number = 0;
 	}
 }
 
@@ -590,6 +607,53 @@ void Rand_Light()
 				}
 }
 
+void Blink()
+{
+	if (LMode>=1 && LMode <= 4)
+	{
+		light = 0b11111111;
+	}
+	else if (LMode>=5 && LMode <=8)
+	{
+		light = 0b00000000;
+	}
+}
+
+void Looping()
+{
+	if (LMode == 1)
+	{
+		light = 0b11110000;
+	}
+	else if (LMode == 2)
+	{
+		light = 0b11100001;
+	}
+	else if (LMode == 3)
+	{
+		light = 0b1100011;
+	}
+	else if (LMode == 4)
+	{
+		light = 0b10000111;
+	}
+	else if (LMode == 5)
+	{
+		light = 0b00001111;
+	}
+	else if (LMode == 6)
+	{
+		light = 0b100001111;
+	}
+	else if (LMode == 7)
+	{
+		light = 0b110000111;
+	}
+	else if (LMode == 8)
+	{
+		light = 0b11100001;
+	}
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -601,6 +665,54 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			LMode = 1;
 		}
 	}
+}
+
+void EEPROMWrite() {
+if (WriteFlag && hi2c1.State == HAL_I2C_STATE_READY) {
+HAL_I2C_Mem_Write_IT(&hi2c1, EEPROM_ADDR, 0x2C, I2C_MEMADD_SIZE_16BIT,
+
+data, 1);
+
+WriteFlag = 0;
+}
+}
+
+void EEPROMRead(uint8_t *Rdata, uint16_t len) {
+if (ReadFlag && hi2c1.State == HAL_I2C_STATE_READY) {
+HAL_I2C_Mem_Read_IT(&hi2c1, EEPROM_ADDR, 0x2c, I2C_MEMADD_SIZE_16BIT,
+
+Rdata, len);
+ReadFlag = 0;
+}
+}
+
+void Checkbomb()
+{
+	if (Number == 1 && Press < 2)
+	{
+		ReadFlag = 1;
+	}
+
+}
+
+void DisplayBomb()
+{
+	if(ReadBomb[0] == 1)
+	{
+		light = 0b11111110;
+	}
+	else if(ReadBomb[0] == 2)
+	{
+		light = 0b11111100;
+	}
+	else if(ReadBomb[0] == 3)
+		{
+			light = 0b11111000;
+		}
+	else if(ReadBomb[0] == 4)
+		{
+			light = 0b11110000;
+		}
 }
 
 /* USER CODE END 4 */
