@@ -46,6 +46,8 @@ UART_HandleTypeDef hlpuart1;
 
 SPI_HandleTypeDef hspi3;
 
+TIM_HandleTypeDef htim3;
+
 /* USER CODE BEGIN PV */
 uint8_t SPI_TX[10];
 uint8_t SPI_RX[10];
@@ -58,6 +60,9 @@ uint16_t State;
 uint16_t Z;
 uint16_t T;
 uint16_t Reward;
+uint16_t Rx_Button[10];
+uint16_t light;
+uint16_t LMode;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,6 +71,7 @@ static void MX_GPIO_Init(void);
 static void MX_LPUART1_UART_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void SPITxRx_read_Write_IO();
 void LIGHT_OUTPUT_Setup();
@@ -112,8 +118,9 @@ int main(void)
   MX_LPUART1_UART_Init();
   MX_SPI3_Init();
   MX_I2C1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  LIGHT_OUTPUT_Setup();
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -126,6 +133,7 @@ int main(void)
 	  SPITxRx_read_Write_IO();
 	  Convert_HC_35_2_Number();
 	  random_std();
+
 
   }
   /* USER CODE END 3 */
@@ -313,6 +321,51 @@ static void MX_SPI3_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 16999;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 499;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -375,64 +428,79 @@ void LIGHT_OUTPUT_Setup()
 }
 
 void SPITxRx_read_Write_IO()
-	{
-	if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
-		{
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0); // CS Select
-			if (State == 0)
-			{
-				SPI_TX[0] = 0b01000001;//read
-				SPI_TX[1] = 0x12;
-				SPI_TX[2] = 0;
-			}
-			else if(State == 1)
-			{
-				SET_LIGHT_B();
-			}
-			HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
-			}
+{
+    if(HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_2))
+    {
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0); // CS Select
+        SPI_TX[0] = 0b01000001;
+        SPI_TX[1] = 0x12;
+        SPI_TX[2] = 0x00;
+        HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, Rx_Button, 3);
+        Convert_HC_35_2_Number();
+        SET_LIGHT_B();
+
+        HAL_Delay(1);
+
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_2, 0); // CS Select
+        SPI_TX[0] = 0b01000000;
+        SPI_TX[1] = 0x01;
+        SPI_TX[2] = light;
+        HAL_SPI_TransmitReceive_IT(&hspi3, SPI_TX, SPI_RX, 3);
+
+    }
 }
 
 void SET_LIGHT_B()
 {
-	SPI_TX[0] = 0b01000000;
-	SPI_TX[1] = 0x15;
-	if (Number == 1)
+	if(control_rand == 0)
 	{
-		SPI_TX[2] = 0b11000000;
+		if (Number == 1)
+			{
+				light = 0b11000000;
+			}
+			else if (Number == 2)
+			{
+				light = 0b00000011;
+			}
+			else if (Number == 3)
+			{
+				light = 0b11111111;
+			}
+			else if (Number == 4)
+			{
+				light = 0b00000000;
+			}
 	}
-	else if (Number == 2)
+	else if (control_rand == 1)
 	{
-		SPI_TX[2] = 0b00000011;
+		Rand_Light();
 	}
-	else if (Number == 3)
-	{
-		SPI_TX[2] = 0b11111111;
-	}
+
 
 }
 void shipbit()
 {
-	T = SPI_RX[2] >> 4;
+	T = Rx_Button[1] >> 4;
 }
 void Convert_HC_35_2_Number()
 {
-	if (SPI_RX[2]== 14)
+	if (Rx_Button[1]== 14)
 		{
 			Number = 1;
 		}
-	else if (SPI_RX[2]== 13)
+	else if (Rx_Button[1]== 13)
 		{
 			Number = 2;
 		}
-	else if (SPI_RX[2]== 11)
+	else if (Rx_Button[1]== 11)
 		{
 			Number = 3;
 		}
-	else if (SPI_RX[2]== 7)
+	else if (Rx_Button[1]== 7)
 		{
 			Number = 4;
 		}
+
 }
 
 void Game()
@@ -482,9 +550,56 @@ void random_std()
 {
 	if(control_rand == 1)
 	{
-		Random = rand() % 4;
+		Random = (rand() % 4)+1;
+	}
+}
+
+void Rand_Light()
+{
+			if (LMode == 1)
+				{
+				light = 0b11111110;
+				}
+			else if (LMode == 2)
+				{
+				light = 0b11111101;
+				}
+			else if (LMode == 3)
+				{
+				light = 0b11111011;
+				}
+			else if (LMode == 4)
+				{
+				light = 0b11110111;
+				}
+			else if (LMode == 5)
+				{
+				light = 0b11101111;
+				}
+			else if (LMode == 6)
+				{
+				light = 0b11011111;
+				}
+			else if (LMode == 7)
+				{
+				light = 0b10111111;
+				}
+			else if (LMode == 8)
+				{
+				light = 0b01111111;
+				}
+}
 
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim == &htim3)
+	{
+		LMode+=1;
+		if (LMode>8)
+		{
+			LMode = 1;
+		}
 	}
 }
 
