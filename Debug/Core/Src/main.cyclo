@@ -9,7 +9,7 @@
 ../Core/Src/main.c:442:6:SPITxRx_read_Write_IO	2
 ../Core/Src/main.c:465:6:SET_LIGHT_B	9
 ../Core/Src/main.c:494:6:shipbit	1
-../Core/Src/main.c:498:6:Convert_HC_35_2_Number	5
+../Core/Src/main.c:498:6:Convert_HC_35_2_Number	9
 ../Core/Src/main.c:519:6:Game	6
 ../Core/Src/main.c:533:6:HAL_SPI_TxRxCpltCallback	3
 ../Core/Src/main.c:548:6:HAL_GPIO_EXTI_Callback	6

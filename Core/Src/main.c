@@ -497,19 +497,19 @@ void shipbit()
 }
 void Convert_HC_35_2_Number()
 {
-	if (Rx_Button[1]== 14)
+	if (Rx_Button[1]== 14 && Reward != 1)
 		{
 			Number = 1;
 		}
-	else if (Rx_Button[1]== 13)
+	else if (Rx_Button[1]== 13 && Reward != 1)
 		{
 			Number = 2;
 		}
-	else if (Rx_Button[1]== 11)
+	else if (Rx_Button[1]== 11 && Reward != 1)
 		{
 			Number = 3;
 		}
-	else if (Rx_Button[1]== 7)
+	else if (Rx_Button[1]== 7 && Reward != 1)
 		{
 			Number = 4;
 		}
